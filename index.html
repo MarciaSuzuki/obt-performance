@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Performance Studio | Tripod Method</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="20" cy="20" r="18" stroke="currentColor" stroke-width="2"/>
+                        <path d="M20 8 L20 32 M12 14 L20 20 L12 26 M28 14 L20 20 L28 26" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                    </svg>
+                </div>
+                <div class="logo-text">
+                    <span class="logo-title">Voice Performance Studio</span>
+                    <span class="logo-subtitle">Tripod Method · Oral Bible Translation</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="settingsBtn" class="icon-btn" title="Settings">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Left Panel: Text Input -->
+            <section class="panel text-panel">
+                <div class="panel-header">
+                    <h2>Sacred Text</h2>
+                    <div class="language-selector">
+                        <select id="languageSelect">
+                            <option value="hi-IN">हिन्दी (Hindi)</option>
+                            <option value="en-IN">Indian English</option>
+                            <option value="pt-BR">Português Sertanejo</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="panel-content">
+                    <textarea 
+                        id="sacredText" 
+                        class="sacred-text-input"
+                        placeholder="Enter the sacred text here. The words will never be changed — only the performance will be refined."
+                    >आदि में परमेश्‍वर ने आकाश और पृथ्वी की सृष्टि की।</textarea>
+                    <div class="text-info">
+                        <span id="charCount">0 characters</span>
+                        <span class="separator">·</span>
+                        <span id="wordCount">0 words</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Center Panel: Performance Controls -->
+            <section class="panel performance-panel">
+                <div class="panel-header">
+                    <h2>Performance</h2>
+                    <span class="version-badge" id="versionBadge">Version 0</span>
+                </div>
+                
+                <div class="panel-content">
+                    <!-- Audio Player -->
+                    <div class="audio-section">
+                        <div class="waveform-container" id="waveformContainer">
+                            <canvas id="waveformCanvas"></canvas>
+                            <div class="playhead" id="playhead"></div>
+                        </div>
+                        <div class="audio-controls">
+                            <button id="playBtn" class="play-btn" disabled>
+                                <svg class="play-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M8 5v14l11-7z"/>
+                                </svg>
+                                <svg class="pause-icon" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M6 4h4v16H6zM14 4h4v16h-4z"/>
+                                </svg>
+                            </button>
+                            <div class="time-display">
+                                <span id="currentTime">0:00</span>
+                                <span class="time-separator">/</span>
+                                <span id="totalTime">0:00</span>
+                            </div>
+                            <div class="playback-speed">
+                                <button id="speedBtn" class="speed-btn">1x</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button id="generateBtn" class="generate-btn">
+                        <span class="btn-text">Generate Performance</span>
+                        <span class="btn-loading">
+                            <svg class="spinner" viewBox="0 0 24 24">
+                                <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" fill="none" stroke-dasharray="60" stroke-linecap="round"/>
+                            </svg>
+                            Generating...
+                        </span>
+                    </button>
+
+                    <!-- Current Markup Display -->
+                    <div class="markup-section">
+                        <div class="markup-header">
+                            <h3>Performance Markup</h3>
+                            <button id="copyMarkupBtn" class="copy-btn" title="Copy markup">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="9" y="9" width="13" height="13" rx="2"/>
+                                    <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div id="markupDisplay" class="markup-display">
+                            <span class="placeholder">Performance markup will appear here after generation...</span>
+                        </div>
+                    </div>
+
+                    <!-- Emotion Tags Quick Reference -->
+                    <div class="tags-reference">
+                        <h4>Available Tags</h4>
+                        <div class="tags-grid">
+                            <span class="tag" data-tag="[reverent]">reverent</span>
+                            <span class="tag" data-tag="[joyful]">joyful</span>
+                            <span class="tag" data-tag="[sorrowful]">sorrowful</span>
+                            <span class="tag" data-tag="[urgent]">urgent</span>
+                            <span class="tag" data-tag="[whisper]">whisper</span>
+                            <span class="tag" data-tag="[pause]">pause</span>
+                            <span class="tag" data-tag="[slow]">slow</span>
+                            <span class="tag" data-tag="[emphasis]">emphasis</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Right Panel: Voice Feedback -->
+            <section class="panel feedback-panel">
+                <div class="panel-header">
+                    <h2>Voice Feedback</h2>
+                </div>
+                <div class="panel-content">
+                    <!-- Recording Interface -->
+                    <div class="recording-section">
+                        <button id="recordBtn" class="record-btn">
+                            <div class="record-indicator"></div>
+                            <span class="record-text">Hold to Speak</span>
+                        </button>
+                        <p class="recording-hint">
+                            Describe how you want the performance to change.<br>
+                            <em>"Make 'heavens' more reverent"</em><br>
+                            <em>"Add a pause after 'earth'"</em><br>
+                            <em>"Whisper at the end"</em>
+                        </p>
+                    </div>
+
+                    <!-- Feedback History -->
+                    <div class="feedback-history">
+                        <h3>Refinement History</h3>
+                        <div id="feedbackList" class="feedback-list">
+                            <div class="empty-state">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <path d="M12 18.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"/>
+                                    <path d="M12 14v-4M12 8h.01"/>
+                                </svg>
+                                <p>No feedback yet. Record your voice to refine the performance.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Text Input Alternative -->
+                    <div class="text-feedback-section">
+                        <div class="divider">
+                            <span>or type feedback</span>
+                        </div>
+                        <div class="text-feedback-input-container">
+                            <input 
+                                type="text" 
+                                id="textFeedbackInput" 
+                                class="text-feedback-input"
+                                placeholder="Type your feedback here..."
+                            >
+                            <button id="sendFeedbackBtn" class="send-btn">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeSettingsBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- API Keys Section -->
+                <div class="settings-section">
+                    <h3>API Configuration</h3>
+                    <div class="form-group">
+                        <label for="elevenLabsKey">ElevenLabs API Key</label>
+                        <input type="password" id="elevenLabsKey" placeholder="Enter your API key">
+                        <p class="form-hint">Required for voice generation. Get your key at <a href="https://elevenlabs.io" target="_blank">elevenlabs.io</a></p>
+                    </div>
+                    <div class="form-group">
+                        <label for="anthropicKey">Anthropic API Key (Optional)</label>
+                        <input type="password" id="anthropicKey" placeholder="Enter your API key">
+                        <p class="form-hint">For smarter feedback interpretation. Get your key at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></p>
+                    </div>
+                </div>
+
+                <!-- Voice Management Section -->
+                <div class="settings-section">
+                    <h3>Your Voices</h3>
+                    <p class="section-description">Add your ElevenLabs voices below. Format: <code>Voice Name | voice_id</code> (one per line)</p>
+                    
+                    <div class="form-group">
+                        <div class="textarea-header">
+                            <label for="customVoicesTextarea">Voice List</label>
+                            <button type="button" class="fetch-voices-btn" onclick="fetchElevenLabsVoices()">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                                    <path d="M21 12a9 9 0 11-9-9"/>
+                                    <path d="M21 3v6h-6"/>
+                                </svg>
+                                Fetch My Voices
+                            </button>
+                        </div>
+                        <textarea 
+                            id="customVoicesTextarea" 
+                            class="voices-textarea"
+                            placeholder="Aria (Female) | pMsXgVXv3BLzUgSXRplE
+Sarah (Female) | EXAVITQu4vr4xnSDxMaL
+My Custom Voice | your_voice_id_here"
+                            rows="6"
+                        ></textarea>
+                        <p class="form-hint">Click "Fetch My Voices" to automatically load all voices from your ElevenLabs account.</p>
+                    </div>
+                </div>
+                
+                <!-- Voice Selection Per Language -->
+                <div class="settings-section">
+                    <h3>Voice Selection by Language</h3>
+                    <div class="voice-selection-grid">
+                        <div class="form-group">
+                            <label for="voiceHindi">🇮🇳 Hindi Voice</label>
+                            <select id="voiceHindi">
+                                <option value="">Select a voice...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="voiceEnglishIN">🇮🇳 Indian English Voice</label>
+                            <select id="voiceEnglishIN">
+                                <option value="">Select a voice...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="voicePortuguese">🇧🇷 Portuguese (Sertanejo) Voice</label>
+                            <select id="voicePortuguese">
+                                <option value="">Select a voice...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TTS Model Section -->
+                <div class="settings-section">
+                    <h3>TTS Model</h3>
+                    <div class="form-group">
+                        <label for="ttsModel">Model</label>
+                        <select id="ttsModel">
+                            <option value="eleven_multilingual_v2">Multilingual v2 (Best for non-English)</option>
+                            <option value="eleven_turbo_v2_5">Turbo v2.5 (Faster, good quality)</option>
+                            <option value="eleven_monolingual_v1">Monolingual v1 (English only)</option>
+                        </select>
+                        <p class="form-hint">Multilingual v2 is recommended for Hindi and Portuguese.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="saveSettingsBtn" class="primary-btn">Save Settings</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast">
+        <span class="toast-message"></span>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
