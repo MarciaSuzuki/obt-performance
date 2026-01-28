@@ -424,16 +424,21 @@ async function callElevenLabsV3API(text, voiceId, nextText = null) {
     // Build request body
     const requestBody = {
         text: text,
-        model_id: model,
-        voice_settings: {
-            stability: 0.4,  // Lower for more expression
-            similarity_boost: 0.75,
-            style: 0.6,     // Higher for more emotion
-            use_speaker_boost: true
-        }
+        model_id: model
     };
     
-    // Add next_text for emotion context (the "hack" that works!)
+    // Eleven v3 has stricter voice_settings requirements
+    // Only add voice_settings for non-v3 models
+    if (model !== 'eleven_v3_alpha') {
+        requestBody.voice_settings = {
+            stability: 0.5,
+            similarity_boost: 0.75,
+            style: 0.5,
+            use_speaker_boost: true
+        };
+    }
+    
+    // Add next_text for emotion context (works with all models)
     if (nextText) {
         requestBody.next_text = nextText;
     }
