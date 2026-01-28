@@ -1,13 +1,13 @@
 /**
- * Voice Performance Studio v3
+ * Voice Performance Studio v4
  * Tripod Method · Oral Bible Translation
  * 
- * FIXED: Properly controls ElevenLabs voice performance without speaking tags
+ * FIXED: Uses ElevenLabs Eleven v3 Audio Tags for AUDIBLE emotion control
  * 
- * ElevenLabs emotion control methods:
- * 1. Voice settings (stability, similarity, style)
- * 2. Text formatting (punctuation, emphasis markers)
- * 3. Model selection (eleven_v3 for audio tags)
+ * Key insight: Eleven v3 model interprets [tags] as performance directions,
+ * NOT as text to be spoken. This is different from other models.
+ * 
+ * Also uses the `next_text` parameter hack for additional emotion context.
  */
 
 // ===================================
@@ -36,108 +36,87 @@ const CONFIG = {
         }
     },
     
-    // Performance presets that map to actual ElevenLabs voice settings
-    // These are NOT spoken - they control the voice synthesis
-    performancePresets: {
-        'reverent': {
-            description: 'Slow, solemn, respectful',
-            stability: 0.7,
-            similarity_boost: 0.8,
-            style: 0.3,
-            speed: 0.85,
-            textTransform: (text) => text.toLowerCase().replace(/!/g, '.'),
-            pauseAfter: true
+    // ElevenLabs v3 Audio Tags that WORK (not spoken, interpreted as directions)
+    // These produce AUDIBLE differences in the output
+    audioTags: {
+        // Emotional tags
+        'reverent': { 
+            tag: '[solemn]', 
+            description: 'Solemn, respectful tone',
+            nextText: 'he said with deep reverence and respect.'
         },
-        'joyful': {
-            description: 'Bright, energetic, happy',
-            stability: 0.4,
-            similarity_boost: 0.75,
-            style: 0.8,
-            speed: 1.1,
-            textTransform: (text) => text + '!',
-            pauseAfter: false
+        'joyful': { 
+            tag: '[happily]', 
+            description: 'Happy, bright, celebratory',
+            nextText: 'she exclaimed with joy and excitement!'
         },
-        'sorrowful': {
-            description: 'Slow, melancholic, heavy',
-            stability: 0.75,
-            similarity_boost: 0.8,
-            style: 0.4,
-            speed: 0.8,
-            textTransform: (text) => text.replace(/!/g, '...'),
-            pauseAfter: true
+        'sorrowful': { 
+            tag: '[sad]', 
+            description: 'Sad, melancholic, grieving',
+            nextText: 'he said sorrowfully, with grief in his voice.'
         },
-        'urgent': {
-            description: 'Fast, intense, pressing',
-            stability: 0.35,
-            similarity_boost: 0.7,
-            style: 0.7,
-            speed: 1.25,
-            textTransform: (text) => text.replace(/\./g, '!'),
-            pauseAfter: false
+        'urgent': { 
+            tag: '[urgently]', 
+            description: 'Pressing, important, intense',
+            nextText: 'she shouted urgently!'
         },
-        'whisper': {
+        'whisper': { 
+            tag: '[whispers]', 
             description: 'Soft, intimate, quiet',
-            stability: 0.8,
-            similarity_boost: 0.9,
-            style: 0.2,
-            speed: 0.9,
-            textTransform: (text) => text.toLowerCase(),
-            pauseAfter: true
+            nextText: 'he whispered softly.'
         },
-        'peaceful': {
-            description: 'Calm, gentle, serene',
-            stability: 0.8,
-            similarity_boost: 0.8,
-            style: 0.3,
-            speed: 0.9,
-            textTransform: (text) => text,
-            pauseAfter: true
+        'peaceful': { 
+            tag: '[calmly]', 
+            description: 'Calm, serene, tranquil',
+            nextText: 'she said peacefully and calmly.'
         },
-        'emphasis': {
-            description: 'Strong, clear, important',
-            stability: 0.5,
-            similarity_boost: 0.75,
-            style: 0.6,
-            speed: 0.95,
-            textTransform: (text) => text.toUpperCase(),
-            pauseAfter: false
+        'emphasis': { 
+            tag: '[firmly]', 
+            description: 'Strong, clear, emphatic',
+            nextText: 'he declared firmly with conviction.'
         },
-        'slow': {
-            description: 'Deliberately paced',
-            stability: 0.7,
-            similarity_boost: 0.8,
-            style: 0.4,
-            speed: 0.75,
-            textTransform: (text) => text,
-            pauseAfter: true
+        'awe': { 
+            tag: '[in awe]', 
+            description: 'Wonder, amazement, astonishment',
+            nextText: 'she gasped in complete awe and wonder.'
         },
-        'fast': {
-            description: 'Quick paced',
-            stability: 0.4,
-            similarity_boost: 0.7,
-            style: 0.5,
-            speed: 1.3,
-            textTransform: (text) => text,
-            pauseAfter: false
+        'warning': { 
+            tag: '[sternly]', 
+            description: 'Serious warning, grave',
+            nextText: 'he warned sternly.'
         },
-        'awe': {
-            description: 'Wonder, amazement',
-            stability: 0.5,
-            similarity_boost: 0.8,
-            style: 0.6,
-            speed: 0.85,
-            textTransform: (text) => text + '...',
-            pauseAfter: true
+        'gentle': { 
+            tag: '[softly]', 
+            description: 'Tender, kind, gentle',
+            nextText: 'she said gently and tenderly.'
         },
-        'pause': {
-            description: 'Insert a pause',
-            stability: 0.7,
-            similarity_boost: 0.8,
-            style: 0.4,
-            speed: 1.0,
-            textTransform: (text) => text,
-            pauseAfter: true,
-            isPause: true
+        // Delivery tags
+        'slow': { 
+            tag: '[slowly]', 
+            description: 'Deliberate, measured pace',
+            nextText: 'he spoke slowly and deliberately.'
+        },
+        'fast': { 
+            tag: '[quickly]', 
+            description: 'Rapid, energetic pace',
+            nextText: 'she said quickly.'
+        },
+        'pause': { 
+            tag: '[pause]', 
+            description: 'Insert a dramatic pause',
+            nextText: null,
+            insertAfter: true
+        },
+        // Reactions (v3 can generate these as sounds)
+        'sigh': { 
+            tag: '[sighs]', 
+            description: 'Audible sigh',
+            nextText: null
+        },
+        'breath': { 
+            tag: '[takes a deep breath]', 
+            description: 'Deep breath before speaking',
+            nextText: null
         }
     },
     
@@ -168,7 +147,7 @@ const state = {
     settings: {
         elevenLabsKey: '',
         anthropicKey: '',
-        ttsModel: 'eleven_multilingual_v2',
+        ttsModel: 'eleven_v3_alpha', // Changed to v3 for audio tag support!
         customVoices: [],
         selectedVoiceHindi: '',
         selectedVoiceEnglishIN: '',
@@ -247,7 +226,7 @@ function setupEventListeners() {
     elements.playBtn.addEventListener('click', togglePlayback);
     elements.speedBtn.addEventListener('click', cyclePlaybackSpeed);
     elements.generateBtn.addEventListener('click', generatePerformance);
-    elements.copyMarkupBtn.addEventListener('click', copyInstructions);
+    elements.copyMarkupBtn.addEventListener('click', copyMarkup);
     
     elements.recordBtn.addEventListener('mousedown', startRecording);
     elements.recordBtn.addEventListener('mouseup', stopRecording);
@@ -263,10 +242,12 @@ function setupEventListeners() {
     elements.settingsModal.querySelector('.modal-backdrop').addEventListener('click', closeSettings);
     elements.saveSettingsBtn.addEventListener('click', saveSettings);
     
+    // Show tag description on click
     document.querySelectorAll('.tags-grid .tag').forEach(tag => {
         tag.addEventListener('click', () => {
             const tagName = tag.dataset.tag.replace(/[\[\]]/g, '');
-            showToast(`"${tagName}" - ${CONFIG.performancePresets[tagName]?.description || 'Performance modifier'}`);
+            const audioTag = CONFIG.audioTags[tagName];
+            showToast(`${tagName}: ${audioTag?.description || 'Performance modifier'}`);
         });
     });
     
@@ -300,7 +281,7 @@ function updateTextCounts() {
 }
 
 // ===================================
-// Performance Generation - FIXED
+// Performance Generation - ELEVEN V3
 // ===================================
 
 async function generatePerformance() {
@@ -327,8 +308,14 @@ async function generatePerformance() {
             return;
         }
         
-        // Generate audio with performance instructions applied
-        const audioBlob = await generateWithInstructions(text, voiceId);
+        // Build the text WITH audio tags for v3
+        const { markedText, nextText } = buildMarkedText(text);
+        
+        console.log('Generating with text:', markedText);
+        console.log('Next text context:', nextText);
+        
+        // Generate audio
+        const audioBlob = await callElevenLabsV3API(markedText, voiceId, nextText);
         
         state.audioBlob = audioBlob;
         state.audioUrl = URL.createObjectURL(audioBlob);
@@ -337,6 +324,7 @@ async function generatePerformance() {
         state.versions.push({
             version: state.currentVersion,
             text: text,
+            markedText: markedText,
             instructions: [...state.performanceInstructions],
             timestamp: new Date(),
             audioUrl: state.audioUrl
@@ -344,6 +332,7 @@ async function generatePerformance() {
         
         elements.versionBadge.textContent = `Version ${state.currentVersion}`;
         setupAudioPlayer(state.audioUrl);
+        updateMarkupDisplay(markedText);
         
         showToast('Performance generated!');
         
@@ -357,73 +346,98 @@ async function generatePerformance() {
 }
 
 /**
- * Generate audio by applying performance instructions to voice settings
- * NOT by adding text tags
+ * Build text with ElevenLabs v3 Audio Tags embedded
+ * These tags are NOT spoken - v3 interprets them as directions
  */
-async function generateWithInstructions(originalText, voiceId) {
-    // If no instructions, generate with default settings
+function buildMarkedText(originalText) {
     if (state.performanceInstructions.length === 0) {
-        return await callElevenLabsAPI(originalText, voiceId, getDefaultVoiceSettings());
+        return { markedText: originalText, nextText: null };
     }
     
-    // Determine the dominant emotion/style from instructions
-    const dominantInstruction = state.performanceInstructions[state.performanceInstructions.length - 1];
-    const preset = CONFIG.performancePresets[dominantInstruction?.tag] || CONFIG.performancePresets['reverent'];
+    let markedText = originalText;
+    let nextText = null;
+    const words = originalText.split(/(\s+)/); // Keep whitespace
     
-    // Build voice settings based on the performance preset
-    const voiceSettings = {
-        stability: preset.stability,
-        similarity_boost: preset.similarity_boost,
-        style: preset.style,
-        use_speaker_boost: true
-    };
+    // Sort instructions by position (descending) to insert from end to start
+    const sortedInstructions = [...state.performanceInstructions].sort((a, b) => {
+        const posA = typeof a.position === 'number' ? a.position : (a.position === 'start' ? -1 : 999);
+        const posB = typeof b.position === 'number' ? b.position : (b.position === 'start' ? -1 : 999);
+        return posB - posA;
+    });
     
-    // The text stays UNCHANGED - we only modify voice settings
-    // No tags are added to the text!
-    const textToSpeak = originalText;
+    // Collect all next_text hints
+    const nextTextHints = [];
     
-    // For pauses, we can insert actual silence characters that ElevenLabs understands
-    // ElevenLabs interprets "..." as a natural pause
-    let processedText = textToSpeak;
-    
-    // Apply text-based modifications that ElevenLabs understands
-    // These are punctuation-based, not spoken tags
     for (const instruction of state.performanceInstructions) {
-        const preset = CONFIG.performancePresets[instruction.tag];
-        if (!preset) continue;
-        
-        if (instruction.tag === 'pause' && instruction.position !== undefined) {
-            // Insert natural pause (ellipsis) at the specified position
-            processedText = insertPauseAtPosition(processedText, instruction.position);
-        }
-        
-        if (instruction.tag === 'emphasis' && instruction.word) {
-            // For emphasis, we can use CAPS which affects some voices
-            // But this is subtle - the main control is via voice settings
+        const audioTagConfig = CONFIG.audioTags[instruction.tag];
+        if (audioTagConfig?.nextText) {
+            nextTextHints.push(audioTagConfig.nextText);
         }
     }
     
-    return await callElevenLabsAPI(processedText, voiceId, voiceSettings);
-}
-
-function insertPauseAtPosition(text, position) {
-    const words = text.split(/\s+/);
-    if (position >= 0 && position < words.length) {
-        words[position] = words[position] + '...';
+    if (nextTextHints.length > 0) {
+        nextText = nextTextHints[0]; // Use the first/most recent one
     }
-    return words.join(' ');
+    
+    // Now insert audio tags into the text
+    // For Eleven v3, we insert [tag] BEFORE the word/section it affects
+    
+    for (const instruction of sortedInstructions) {
+        const audioTagConfig = CONFIG.audioTags[instruction.tag];
+        if (!audioTagConfig) continue;
+        
+        const tag = audioTagConfig.tag;
+        
+        if (instruction.position === 'start' || instruction.position === -1) {
+            // Add at the beginning
+            markedText = `${tag} ${markedText}`;
+        } else if (instruction.position === 'end') {
+            // Add before the last part
+            const parts = markedText.split(/\s+/);
+            if (parts.length > 2) {
+                const lastWords = parts.slice(-3).join(' ');
+                const rest = parts.slice(0, -3).join(' ');
+                markedText = `${rest} ${tag} ${lastWords}`;
+            } else {
+                markedText = `${tag} ${markedText}`;
+            }
+        } else if (typeof instruction.position === 'number') {
+            // Insert before specific word position
+            const textWords = markedText.split(/\s+/);
+            if (instruction.position < textWords.length) {
+                textWords.splice(instruction.position, 0, tag);
+                markedText = textWords.join(' ');
+            }
+        }
+    }
+    
+    return { markedText, nextText };
 }
 
-function getDefaultVoiceSettings() {
-    return {
-        stability: 0.5,
-        similarity_boost: 0.75,
-        style: 0.5,
-        use_speaker_boost: true
+/**
+ * Call ElevenLabs API with v3 model and audio tags
+ * Uses next_text parameter for additional emotion context
+ */
+async function callElevenLabsV3API(text, voiceId, nextText = null) {
+    const model = state.settings.ttsModel;
+    
+    // Build request body
+    const requestBody = {
+        text: text,
+        model_id: model,
+        voice_settings: {
+            stability: 0.4,  // Lower for more expression
+            similarity_boost: 0.75,
+            style: 0.6,     // Higher for more emotion
+            use_speaker_boost: true
+        }
     };
-}
-
-async function callElevenLabsAPI(text, voiceId, voiceSettings) {
+    
+    // Add next_text for emotion context (the "hack" that works!)
+    if (nextText) {
+        requestBody.next_text = nextText;
+    }
+    
     const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
         method: 'POST',
         headers: {
@@ -431,11 +445,7 @@ async function callElevenLabsAPI(text, voiceId, voiceSettings) {
             'Content-Type': 'application/json',
             'xi-api-key': state.settings.elevenLabsKey
         },
-        body: JSON.stringify({
-            text: text,
-            model_id: state.settings.ttsModel,
-            voice_settings: voiceSettings
-        })
+        body: JSON.stringify(requestBody)
     });
     
     if (!response.ok) {
@@ -456,32 +466,28 @@ function getVoiceForLanguage(langCode) {
 }
 
 // ===================================
-// Instructions Display (not spoken)
+// Markup Display
 // ===================================
+
+function updateMarkupDisplay(markedText) {
+    // Highlight the v3 audio tags
+    const highlighted = markedText.replace(/\[([^\]]+)\]/g, '<span class="tag">[$1]</span>');
+    elements.markupDisplay.innerHTML = highlighted;
+}
 
 function updateInstructionsDisplay() {
     if (state.performanceInstructions.length === 0) {
-        elements.markupDisplay.innerHTML = '<span class="placeholder">Performance instructions will appear here...</span>';
+        elements.markupDisplay.innerHTML = '<span class="placeholder">Add performance directions using voice or text feedback...</span>';
         return;
     }
     
-    const instructionsList = state.performanceInstructions.map(inst => {
-        const preset = CONFIG.performancePresets[inst.tag];
-        const desc = preset ? preset.description : '';
-        const location = inst.word ? `at "${inst.word}"` : (inst.position === 'start' ? 'at beginning' : inst.position === 'end' ? 'at end' : '');
-        return `<div class="instruction-item">
-            <span class="tag">[${inst.tag}]</span> 
-            <span class="instruction-desc">${desc}</span>
-            ${location ? `<span class="instruction-location">${location}</span>` : ''}
-        </div>`;
-    }).join('');
-    
-    elements.markupDisplay.innerHTML = instructionsList;
+    const { markedText } = buildMarkedText(elements.sacredText.value);
+    updateMarkupDisplay(markedText);
 }
 
-function copyInstructions() {
-    const text = state.performanceInstructions.map(i => `[${i.tag}] ${i.word || i.position || ''}`).join('\n');
-    navigator.clipboard.writeText(text || state.sacredText).then(() => {
+function copyMarkup() {
+    const { markedText } = buildMarkedText(elements.sacredText.value);
+    navigator.clipboard.writeText(markedText || state.sacredText).then(() => {
         showToast('Copied!');
     });
 }
@@ -677,7 +683,7 @@ function stopRecording() {
 }
 
 // ===================================
-// Feedback Processing - FIXED
+// Feedback Processing
 // ===================================
 
 function sendTextFeedback() {
@@ -699,7 +705,6 @@ async function processFeedback(feedbackText) {
     showToast('Processing feedback...');
     
     try {
-        // Parse feedback to extract instructions (NOT to add text tags)
         const instruction = await parseFeedbackToInstruction(sacredText, feedbackText);
         
         if (instruction) {
@@ -718,45 +723,34 @@ async function processFeedback(feedbackText) {
     }
 }
 
-/**
- * Parse user feedback into a performance instruction
- * Returns an object like {tag: 'reverent', position: 'start', word: null}
- * NOT a modified text string
- */
 async function parseFeedbackToInstruction(sacredText, feedback) {
-    // If we have Claude API, use it for better parsing
     if (state.settings.anthropicKey) {
         return await parseWithClaude(sacredText, feedback);
     }
-    
-    // Otherwise use rule-based parsing
     return parseWithRules(sacredText, feedback);
 }
 
 async function parseWithClaude(sacredText, feedback) {
-    const systemPrompt = `You parse voice performance feedback into structured instructions.
+    const availableTags = Object.keys(CONFIG.audioTags).join(', ');
+    
+    const systemPrompt = `You parse voice performance feedback into structured instructions for ElevenLabs v3.
 
-Available performance styles: reverent, joyful, sorrowful, urgent, whisper, peaceful, emphasis, slow, fast, awe, pause
+Available performance tags: ${availableTags}
 
-Return ONLY a JSON object with these fields:
-- tag: the performance style to apply (from the list above)
-- position: "start", "end", "middle", or a word index number
-- word: the specific word mentioned (if any), or null
+Return ONLY a JSON object:
+- tag: one of the available tags
+- position: "start", "end", or a word index number
+- word: the specific word mentioned (if any)
 
 Examples:
-Feedback: "make it more reverent"
-Output: {"tag": "reverent", "position": "start", "word": null}
+"make it more reverent" → {"tag": "reverent", "position": "start", "word": null}
+"whisper at the end" → {"tag": "whisper", "position": "end", "word": null}
+"add a pause after heavens" → {"tag": "pause", "position": 4, "word": "heavens"}
+"say 'earth' with awe" → {"tag": "awe", "position": 7, "word": "earth"}
+"make it joyful" → {"tag": "joyful", "position": "start", "word": null}
+"speak slowly" → {"tag": "slow", "position": "start", "word": null}
 
-Feedback: "add a pause after heavens"
-Output: {"tag": "pause", "position": 4, "word": "heavens"}
-
-Feedback: "whisper at the end"
-Output: {"tag": "whisper", "position": "end", "word": null}
-
-Feedback: "make 'earth' more emphasized"
-Output: {"tag": "emphasis", "position": 7, "word": "earth"}
-
-Return ONLY valid JSON, no explanation.`;
+Return ONLY valid JSON.`;
 
     try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -782,12 +776,11 @@ Return ONLY valid JSON, no explanation.`;
         
         const data = await response.json();
         const jsonText = data.content[0].text.trim();
+        const parsed = JSON.parse(jsonText.replace(/```json?|```/g, ''));
         
-        // Parse JSON response
-        const parsed = JSON.parse(jsonText);
         return {
             tag: parsed.tag || 'reverent',
-            position: parsed.position || 'start',
+            position: parsed.position ?? 'start',
             word: parsed.word || null
         };
         
@@ -802,19 +795,23 @@ function parseWithRules(sacredText, feedback) {
     const words = sacredText.split(/\s+/);
     
     // Detect the performance tag
-    let tag = 'reverent'; // default
+    let tag = 'reverent';
     const tagMappings = {
-        'reverent': ['reverent', 'reverence', 'respectful', 'solemn', 'holy'],
-        'joyful': ['joyful', 'happy', 'joy', 'cheerful', 'bright'],
-        'sorrowful': ['sorrowful', 'sad', 'grief', 'melancholy'],
-        'urgent': ['urgent', 'fast', 'quick', 'hurry'],
-        'whisper': ['whisper', 'soft', 'quiet'],
-        'peaceful': ['peaceful', 'calm', 'serene'],
-        'emphasis': ['emphasis', 'stress', 'emphasize', 'important'],
-        'slow': ['slow', 'slower', 'deliberate'],
-        'fast': ['fast', 'faster', 'quick', 'rapid'],
-        'awe': ['awe', 'wonder', 'amazed'],
-        'pause': ['pause', 'break', 'stop', 'wait']
+        'reverent': ['reverent', 'reverence', 'respectful', 'solemn', 'holy', 'sacred'],
+        'joyful': ['joyful', 'happy', 'joy', 'cheerful', 'bright', 'excited'],
+        'sorrowful': ['sorrowful', 'sad', 'grief', 'melancholy', 'mournful'],
+        'urgent': ['urgent', 'hurry', 'pressing', 'important'],
+        'whisper': ['whisper', 'soft', 'quiet', 'softly'],
+        'peaceful': ['peaceful', 'calm', 'serene', 'gentle'],
+        'emphasis': ['emphasis', 'stress', 'emphasize', 'strong', 'firmly'],
+        'slow': ['slow', 'slower', 'deliberate', 'carefully'],
+        'fast': ['fast', 'faster', 'quick', 'rapid', 'quickly'],
+        'awe': ['awe', 'wonder', 'amazed', 'astonished'],
+        'warning': ['warning', 'warn', 'serious', 'stern'],
+        'gentle': ['gentle', 'tender', 'kind', 'loving'],
+        'pause': ['pause', 'break', 'stop', 'wait'],
+        'sigh': ['sigh', 'sighing'],
+        'breath': ['breath', 'breathing', 'deep breath']
     };
     
     for (const [t, keywords] of Object.entries(tagMappings)) {
@@ -830,22 +827,19 @@ function parseWithRules(sacredText, feedback) {
     
     if (feedbackLower.includes('end') || feedbackLower.includes('last')) {
         position = 'end';
-    } else if (feedbackLower.includes('middle')) {
-        position = 'middle';
     }
     
     // Check for quoted word
     const quotedMatch = feedback.match(/['"]([^'"]+)['"]/);
     if (quotedMatch) {
         word = quotedMatch[1];
-        // Find position of this word
         const wordIndex = words.findIndex(w => 
             w.toLowerCase().replace(/[.,!?;:।]/g, '') === word.toLowerCase()
         );
         if (wordIndex >= 0) position = wordIndex;
     }
     
-    // Check for "at/after/before WORD" pattern
+    // Check for "at/after/before WORD"
     const atMatch = feedbackLower.match(/(?:at|after|before|near)\s+['"]?(\w+)['"]?/);
     if (atMatch && !word) {
         word = atMatch[1];
@@ -872,7 +866,7 @@ function renderFeedbackHistory() {
                     <path d="M12 18.5a6.5 6.5 0 100-13 6.5 6.5 0 000 13z"/>
                     <path d="M12 14v-4M12 8h.01"/>
                 </svg>
-                <p>No feedback yet. Speak or type to refine the performance.</p>
+                <p>Speak or type to add performance directions.</p>
             </div>`;
         return;
     }
@@ -909,6 +903,12 @@ function loadSettings() {
             state.settings = { ...state.settings, ...JSON.parse(saved) };
         } catch (e) {}
     }
+    
+    // Default to v3 for audio tag support
+    if (!state.settings.ttsModel || state.settings.ttsModel === 'eleven_multilingual_v2') {
+        state.settings.ttsModel = 'eleven_v3_alpha';
+    }
+    
     if (!state.settings.customVoices?.length) {
         state.settings.customVoices = [...CONFIG.defaultVoices];
     }
@@ -968,8 +968,10 @@ function populateVoiceSelectors() {
         const select = document.getElementById(id);
         if (select) {
             select.innerHTML = options;
-            const key = 'selectedV' + id.substring(1);
-            select.value = state.settings[key] || voices[0]?.id || '';
+            const settingKey = id === 'voiceHindi' ? 'selectedVoiceHindi' : 
+                              id === 'voiceEnglishIN' ? 'selectedVoiceEnglishIN' : 
+                              'selectedVoicePortuguese';
+            select.value = state.settings[settingKey] || voices[0]?.id || '';
         }
     });
 }
@@ -979,11 +981,11 @@ function closeSettings() {
 }
 
 async function fetchElevenLabsVoices() {
-    if (!state.settings.elevenLabsKey) {
-        // Try to get from the input field
+    let apiKey = state.settings.elevenLabsKey;
+    if (!apiKey) {
         const keyInput = document.getElementById('elevenLabsKey');
         if (keyInput?.value) {
-            state.settings.elevenLabsKey = keyInput.value.trim();
+            apiKey = keyInput.value.trim();
         } else {
             showToast('Please enter your ElevenLabs API key first');
             return;
@@ -994,7 +996,7 @@ async function fetchElevenLabsVoices() {
         showToast('Fetching voices...');
         
         const response = await fetch('https://api.elevenlabs.io/v1/voices', {
-            headers: { 'xi-api-key': state.settings.elevenLabsKey }
+            headers: { 'xi-api-key': apiKey }
         });
         
         if (!response.ok) throw new Error(`API Error: ${response.status}`);
